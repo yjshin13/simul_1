@@ -1,0 +1,12 @@
+streamlit
+numpy
+panda
+cvxpy
+tqdm
+datetime
+openpyxl
+stqdm
+matplotlib
+seaborn
+bt
+plotly
