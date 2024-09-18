@@ -495,19 +495,19 @@ if file is not None:
                     # st.write(st.session_state.EF.iloc[:,2:].columns)
 
 
-                    stock_num = 11
+                    # stock_num = 11
 
                     fig_WE = px.area(st.session_state.alloc,  y=st.session_state.alloc.columns, title='Weight')
-                    # 첫 11개 종목은 빨간색 계열로 설정 (톤을 조금씩 구분)
-                    for i in range(stock_num):
-                        # 빨간색 계열에서 점차 밝아지도록 설정
-                        fig_WE.data[i].update(line=dict(color=f'rgba(255, {int(50 + (205 / 11) * i)}, {int(50 + (205 / 11) * i)}, 1)'))
+                    # # 첫 11개 종목은 빨간색 계열로 설정 (톤을 조금씩 구분)
+                    # for i in range(stock_num):
+                    #     # 빨간색 계열에서 점차 밝아지도록 설정
+                    #     fig_WE.data[i].update(line=dict(color=f'rgba(255, {int(50 + (205 / 11) * i)}, {int(50 + (205 / 11) * i)}, 1)'))
 
-                    # 나머지 종목은 파란색 계열로 설정 (톤을 조금씩 구분)
-                    for i in range(stock_num, len(fig_WE.data)):
-                        # 파란색 계열에서 점차 밝아지도록 설정
-                        fig_WE.data[i].update(line=dict(
-                            color=f'rgba({int(50 + (205 / (len(fig_WE.data) - 11)) * (i - 11))}, {int(50 + (205 / (len(fig_WE.data) - 11)) * (i - 11))}, 255, 1)'))
+                    # # 나머지 종목은 파란색 계열로 설정 (톤을 조금씩 구분)
+                    # for i in range(stock_num, len(fig_WE.data)):
+                    #     # 파란색 계열에서 점차 밝아지도록 설정
+                    #     fig_WE.data[i].update(line=dict(
+                    #         color=f'rgba({int(50 + (205 / (len(fig_WE.data) - 11)) * (i - 11))}, {int(50 + (205 / (len(fig_WE.data) - 11)) * (i - 11))}, 255, 1)'))
 
                     fig_WE.update_traces(line=dict(width=0.1))
                     fig_WE.update_layout(
