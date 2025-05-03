@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
-import 예보_r_mvo_model_func
+import y_r_mvo_model_func
 from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
-import 예보_r_mvo_simul_func
+import y_r_mvo_simul_func
 import seaborn as sns
 import plotly.express as px
 from plotly.subplots import make_subplots
