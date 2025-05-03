@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import resampled_mvo
+import 예보_r_mvo
 from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
