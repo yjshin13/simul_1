@@ -45,32 +45,24 @@ def optimal_portfolio(returns, nPort, assets1, assets2, assets3,
 
 
 def simulation(input_ret, sims, nPort, universe, constraint_range, annualization, shortfall_prob=0.005):
-    from numpy import mean, log, cov
-    from pandas import DataFrame, date_range
-    from stqdm import stqdm
-
-    # 자산군 분류
     growth_assets = universe.index[universe['asset_class'] == 'equity']
     inflation_assets = universe.index[universe['asset_class'] == 'inflation_protection']
     fixed_income_assets = universe.index[universe['asset_class'] == 'fixed_income']
 
-    # 입력 수익률 전처리
     input_returns = input_ret.dropna()
     period = len(input_returns)
     input_returns = np.log(input_returns + 1)
     er = input_returns.mean()
-    cov_matrix = input_returns.cov()
+    cov = input_returns.cov()
 
-    # 시뮬레이션용 데이터 생성
-    dates = date_range(start='2023-03-20', periods=period, freq='D')
-    data = [
-        DataFrame(
-            data=np.random.multivariate_normal(er.values, cov_matrix.values, period),
-            columns=cov_matrix.columns,
-            index=dates
+    dates = pd.date_range(start='2023-03-20', periods=period, freq='D')
+    data = []
+    for i in range(sims):
+        data.append(pd.DataFrame(
+            columns=cov.columns,
+            index=dates,
+            data=np.random.multivariate_normal(er.values, cov.values, period))
         )
-        for _ in range(sims)
-    ]
 
     weights = []
     stdev = []
@@ -78,15 +70,11 @@ def simulation(input_ret, sims, nPort, universe, constraint_range, annualization
 
     for i in stqdm(range(sims)):
         try:
-            # 최적화 수행
-            w, r, std = optimal_portfolio(
-                data[i], nPort, growth_assets, inflation_assets,
-                fixed_income_assets, constraint_range, annualization
-            )
+            w, r, std = optimal_portfolio(data[i], nPort, growth_assets, inflation_assets,
+                                          fixed_income_assets, constraint_range, annualization)
 
-            # ✅ Shortfall Risk 필터링 블록 (On/Off 주석 가능)
-            # -----------------------------
-            port_returns = data[i] @ w.T  # shape: [T x nPort]
+            # ===== Shortfall Risk Filtering =====
+            port_returns = data[i] @ w.T
             cumulative_returns = (port_returns + 1).cumprod(axis=0) - 1
             shortfall_risk = (cumulative_returns.iloc[-1, :] < 0).mean()
 
@@ -94,29 +82,25 @@ def simulation(input_ret, sims, nPort, universe, constraint_range, annualization
                 weights.append(w)
                 stdev.append(std)
                 exp_ret.append(r)
-            # -----------------------------
-            # 👉 shortfall risk 필터링 없이 전체 사용하고 싶을 경우, 위 블록을 주석 처리하고 아래 3줄을 사용하세요:
+
+            # ===== To skip shortfall risk filtering, comment the above block and use this instead =====
             # weights.append(w)
             # stdev.append(std)
             # exp_ret.append(r)
 
         except SolverError:
-            continue
+            pass
 
     if not weights:
         raise ValueError("No feasible portfolios met the shortfall risk constraint.")
 
-    # 평균 효율적 경계선 생성
-    w_avg = np.mean(weights, axis=0)
-    s_avg = np.mean(stdev, axis=0)
-    r_avg = np.mean(exp_ret, axis=0)
-
-    concat = np.hstack([
-        r_avg.reshape(nPort, -1),
-        s_avg.reshape(nPort, -1),
-        w_avg.to_numpy()
-    ])
-    Resampled_EF = pd.DataFrame(concat, columns=["EXP_RET", "STDEV"] + list(input_returns.columns))
+    w = np.mean(weights, axis=0)
+    s = np.mean(stdev, axis=0)
+    r = np.mean(exp_ret, axis=0)
+    concat = np.hstack([a.reshape(nPort, -1) for a in [r, s, w]])
+    column_names = list(input_returns.columns)
+    Resampled_EF = pd.DataFrame(concat, columns=["EXP_RET", "STDEV"] + column_names)
 
     return Resampled_EF
+
 
