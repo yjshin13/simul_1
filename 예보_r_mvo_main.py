@@ -273,7 +273,7 @@ if file is not None:
                                                                          index=st.session_state.input_simul_price.index)], axis=1)
 
             st.session_state.portfolio_port, st.session_state.allocation_f = \
-                backtest.simulation(st.session_state.input_simul_price, st.session_state.Target_alloc, 0, 'Monthly', 'Daily')
+                y_r_mvo_simul_func.simulation(st.session_state.input_simul_price, st.session_state.Target_alloc, 0, 'Monthly', 'Daily')
 
             st.session_state.alloc = st.session_state.allocation_f.copy()
             st.session_state.ret = (st.session_state.input_simul_price.iloc[1:] / st.session_state.input_simul_price.shift(1).dropna()) - 1
@@ -285,7 +285,7 @@ if file is not None:
             #     st.session_state.portfolio_port = st.session_state.portfolio_port[
             #         st.session_state.portfolio_port.index.is_month_end == True]
 
-            st.session_state.drawdown = backtest.drawdown(st.session_state.portfolio_port)
+            st.session_state.drawdown = y_r_mvo_simul_func.drawdown(st.session_state.portfolio_port)
             st.session_state.input_price_N = st.session_state.input_simul_price[
                 (st.session_state.input_simul_price.index >= st.session_state.portfolio_port.index[0]) &
                 (st.session_state.input_simul_price.index <= st.session_state.portfolio_port.index[-1])]
