@@ -100,7 +100,7 @@ if file is not None:
             st.session_state.constraint_range = constraint_range
             st.session_state.input_ret = st.session_state.input_price.pct_change().dropna()
 
-            st.session_state.EF = resampled_mvo.simulation(st.session_state.input_ret,
+            st.session_state.EF = y_r_mvo_model_func.simulation(st.session_state.input_ret,
                                                            st.session_state.nSim, st.session_state.nPort,
                                                            st.session_state.input_universe,
                                                            st.session_state.constraint_range,
