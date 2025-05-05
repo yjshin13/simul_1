@@ -56,14 +56,9 @@ def simulation(input_ret, sims, nPort, universe, constraint_range, annualization
     dates = pd.date_range(start='2023-03-20', periods=period, freq='D')
     data = []
 
-    er_list = []
-    cov_diag_list = []
-
-    for i in range(sims):
-        data_sample = np.random.multivariate_normal(er.values, cov.values, period)
-        data.append(pd.DataFrame(columns=cov.columns, index=dates, data=data_sample))
-        er_list.append(er)
-        cov_diag_list.append(np.sqrt(np.diag(cov)))
+    for i in range(0, sims):
+        data.append(pd.DataFrame(columns=cov.columns, index=dates,
+                                 data=np.random.multivariate_normal(er.values, cov.values, period)))
 
     weights = []
     stdev = []
@@ -78,6 +73,7 @@ def simulation(input_ret, sims, nPort, universe, constraint_range, annualization
                                           fixed_income_assets, constraint_range,
                                           annualization)
 
+            # === Shortfall Risk under Normality ===
             mu_3y = np.array(r) * 3
             sigma_3y = np.array(std) * np.sqrt(3)
             z_score = (0 - mu_3y) / sigma_3y
@@ -103,8 +99,4 @@ def simulation(input_ret, sims, nPort, universe, constraint_range, annualization
     column_names = list(input_returns.columns)
     Resampled_EF = pd.DataFrame(concat, columns=["EXP_RET", "STDEV"] + column_names)
 
-    # 평균 기대수익률과 표준편차 계산
-    mean_er = pd.concat(er_list, axis=1).mean(axis=1)
-    std_er = pd.DataFrame(cov_diag_list, columns=input_returns.columns).mean(axis=0)
-
-    return Resampled_EF, mean_er, std_er
+    return Resampled_EF
