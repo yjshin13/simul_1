@@ -148,7 +148,7 @@ if file is not None:
                 st.info("Expected er: " + str(round(st.session_state.mean_er* 100*12, 2)) + "%")
 
             with col_yy:
-                st.info("Expected std: " + str(round(st.session_state.std_er.loc[Target_index] * 100, 2)) + "%")
+                st.info("Expected std: " + str(round(st.session_state.std_er* 100*sqrt(12), 2)) + "%")
 
             st.write("")
 
