@@ -144,10 +144,10 @@ if file is not None:
                 st.info("Expected Risk: " + str(round(st.session_state.EF.loc[Target_index]["STDEV"] * 100, 2)) + "%")
 
             with col_xx:
-                st.info("Expected Return: " + str(round(st.session_state.mean_er.loc[Target_index]["EXP_RET"] * 100, 2)) + "%")
+                st.info("Expected er: " + str(round(st.session_state.mean_er.loc[Target_index]* 100, 2)) + "%")
 
             with col_yy:
-                st.info("Expected Risk: " + str(round(st.session_state.std_er.loc[Target_index]["STDEV"] * 100, 2)) + "%")
+                st.info("Expected std: " + str(round(st.session_state.std_er.loc[Target_index] * 100, 2)) + "%")
 
             st.write("")
 
