@@ -3,6 +3,7 @@ import pandas as pd
 from cvxpy import *
 from tqdm import tqdm
 from stqdm import stqdm
+from scipy.stats import norm
 
 
 def optimal_portfolio(returns, nPort, assets1, assets2, assets3,
@@ -30,21 +31,18 @@ def optimal_portfolio(returns, nPort, assets1, assets2, assets3,
     weights = []
 
     for i in range(nPort):
-
-
         gamma.value = gamma_vals[i]
         prob.solve()
-        # prob.solve(verbose=True)
         risk_data[i] = sqrt(risk).value
         ret_data[i] = ret.value
         weights.append(np.squeeze(np.asarray(w.value)))
-
 
     weight = pd.DataFrame(data=weights, columns=returns.columns)
     return weight, ret_data, risk_data
 
 
-def simulation(input_ret, sims, nPort, universe, constraint_range, annualization, shortfall_prob=0.005):
+def simulation(input_ret, sims, nPort, universe, constraint_range, annualization):
+
     growth_assets = universe.index[universe['asset_class'] == 'equity']
     inflation_assets = universe.index[universe['asset_class'] == 'inflation_protection']
     fixed_income_assets = universe.index[universe['asset_class'] == 'fixed_income']
@@ -57,42 +55,42 @@ def simulation(input_ret, sims, nPort, universe, constraint_range, annualization
 
     dates = pd.date_range(start='2023-03-20', periods=period, freq='D')
     data = []
-    for i in range(sims):
-        data.append(pd.DataFrame(
-            columns=cov.columns,
-            index=dates,
-            data=np.random.multivariate_normal(er.values, cov.values, period))
-        )
+
+    for i in range(0, sims):
+        data.append(pd.DataFrame(columns=cov.columns, index=dates,
+                                 data=np.random.multivariate_normal(er.values, cov.values, period)))
 
     weights = []
     stdev = []
     exp_ret = []
 
-    for i in stqdm(range(sims)):
+    shortfall_threshold = 0.005  # 0.5%
+
+    for i in stqdm(range(0, sims)):
+
         try:
             w, r, std = optimal_portfolio(data[i], nPort, growth_assets, inflation_assets,
-                                          fixed_income_assets, constraint_range, annualization)
+                                          fixed_income_assets, constraint_range,
+                                          annualization)
 
-            # ===== Shortfall Risk Filtering =====
-            port_returns = data[i] @ w.T
-            cumulative_returns = (port_returns + 1).cumprod(axis=0) - 1
-            shortfall_risk = (cumulative_returns.iloc[-1, :] < 0).mean()
+            # === Shortfall Risk under Normality ===
+            mu_3y = np.array(r) * 3
+            sigma_3y = np.array(std) * np.sqrt(3)
+            z_score = (0 - mu_3y) / sigma_3y
+            shortfall_prob = norm.cdf(z_score)
 
-            if shortfall_risk <= shortfall_prob:
+            if np.all(shortfall_prob <= shortfall_threshold):
                 weights.append(w)
                 stdev.append(std)
                 exp_ret.append(r)
-
-            # ===== To skip shortfall risk filtering, comment the above block and use this instead =====
-            # weights.append(w)
-            # stdev.append(std)
-            # exp_ret.append(r)
+            else:
+                continue
 
         except SolverError:
             pass
 
-    if not weights:
-        raise ValueError("No feasible portfolios met the shortfall risk constraint.")
+    if len(weights) == 0:
+        raise ValueError("No portfolios passed the shortfall risk constraint.")
 
     w = np.mean(weights, axis=0)
     s = np.mean(stdev, axis=0)
@@ -102,5 +100,3 @@ def simulation(input_ret, sims, nPort, universe, constraint_range, annualization
     Resampled_EF = pd.DataFrame(concat, columns=["EXP_RET", "STDEV"] + column_names)
 
     return Resampled_EF
-
-
