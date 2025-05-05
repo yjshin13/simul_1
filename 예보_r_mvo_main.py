@@ -135,7 +135,7 @@ if file is not None:
 
             Target_index = (st.session_state.EF['EXP_RET'] - Target / 100).abs().idxmin()
 
-            col_x, col_y, col_z = st.columns([1, 1, 1,1])
+            col_x, col_y, col_xx, col_yy = st.columns([1, 1, 1, 1])
 
             with col_x:
                 st.info("Expected Return: " + str(round(st.session_state.EF.loc[Target_index]["EXP_RET"] * 100, 2)) + "%")
