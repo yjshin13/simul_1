@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from cvxpy import *
-from tqdm import tqdm
+from cvxpy import Variable, Parameter, Problem, Maximize, sum, quad_form, sqrt
+from cvxpy.error import SolverError
 from stqdm import stqdm
 from scipy.stats import norm
 
@@ -10,35 +10,60 @@ def optimal_portfolio(returns, nPort, assets1, assets2, assets3,
                       constraint_range, annualization):
 
     n = len(returns.columns)
-    w = Variable(n)
     mu = returns.mean() * annualization
     Sigma = returns.cov() * annualization
-    gamma = Parameter(nonneg=True)
-    ret = mu.values.T @ w
-    risk = quad_form(w, Sigma.values)
-    prob = Problem(Maximize(ret - gamma * risk),
-                   [sum(w) == 1, w >= 0.0,
-                    sum(w[assets1]) >= constraint_range[0][0]/100,
-                    sum(w[assets1]) <= constraint_range[0][1]/100,
-                    sum(w[assets2]) >= constraint_range[1][0]/100,
-                    sum(w[assets2]) <= constraint_range[1][1]/100,
-                    sum(w[assets3]) >= constraint_range[2][0]/100,
-                    sum(w[assets3]) <= constraint_range[2][1]/100])
 
-    risk_data = np.zeros(nPort)
-    ret_data = np.zeros(nPort)
+    # Shortfall risk parameters (3년 수익률 기준)
+    z_val = 2.576  # P(R < 0) ≤ 0.5%일 때 z-score
+    scale_mu = 3
+    scale_sigma = np.sqrt(3)
+    k = (z_val * scale_sigma) / scale_mu
+
+    # 최적화 결과 저장
     gamma_vals = np.logspace(-2, 3, num=nPort)
     weights = []
+    ret_data = []
+    risk_data = []
 
     for i in range(nPort):
-        gamma.value = gamma_vals[i]
-        prob.solve()
-        risk_data[i] = sqrt(risk).value
-        ret_data[i] = ret.value
-        weights.append(np.squeeze(np.asarray(w.value)))
+        try:
+            w = Variable(n)
+            gamma = Parameter(nonneg=True)
+            gamma.value = gamma_vals[i]
 
-    weight = pd.DataFrame(data=weights, columns=returns.columns)
-    return weight, ret_data, risk_data
+            port_ret = mu.values.T @ w
+            port_risk = quad_form(w, Sigma.values)
+
+            # Shortfall 제약식
+            shortfall_constraint = port_ret >= k * sqrt(port_risk)
+
+            constraints = [
+                sum(w) == 1,
+                w >= 0,
+                sum(w[assets1]) >= constraint_range[0][0] / 100,
+                sum(w[assets1]) <= constraint_range[0][1] / 100,
+                sum(w[assets2]) >= constraint_range[1][0] / 100,
+                sum(w[assets2]) <= constraint_range[1][1] / 100,
+                sum(w[assets3]) >= constraint_range[2][0] / 100,
+                sum(w[assets3]) <= constraint_range[2][1] / 100,
+                shortfall_constraint
+            ]
+
+            prob = Problem(Maximize(port_ret - gamma * port_risk), constraints)
+            prob.solve()
+
+            weights.append(np.squeeze(np.asarray(w.value)))
+            ret_data.append(port_ret.value)
+            risk_data.append(np.sqrt(port_risk.value))
+
+        except SolverError:
+            continue
+
+    if len(weights) == 0:
+        raise ValueError("No feasible portfolios satisfying shortfall constraints.")
+
+    weight_df = pd.DataFrame(data=weights, columns=returns.columns)
+    return weight_df, np.array(ret_data), np.array(risk_data)
 
 
 def simulation(input_ret, sims, nPort, universe, constraint_range, annualization):
@@ -56,47 +81,45 @@ def simulation(input_ret, sims, nPort, universe, constraint_range, annualization
     dates = pd.date_range(start='2023-03-20', periods=period, freq='D')
     data = []
 
-    for i in range(0, sims):
-        data.append(pd.DataFrame(columns=cov.columns, index=dates,
-                                 data=np.random.multivariate_normal(er.values, cov.values, period)))
+    er_list = []
+    cov_diag_list = []
+
+    for i in range(sims):
+        data_sample = np.random.multivariate_normal(er.values, cov.values, period)
+        data.append(pd.DataFrame(columns=cov.columns, index=dates, data=data_sample))
+        er_list.append(er)
+        cov_diag_list.append(np.sqrt(np.diag(cov)))
 
     weights = []
     stdev = []
     exp_ret = []
 
-    shortfall_threshold = 0.005  # 0.5%
-
-    for i in stqdm(range(0, sims)):
-
+    for i in stqdm(range(sims)):
         try:
             w, r, std = optimal_portfolio(data[i], nPort, growth_assets, inflation_assets,
                                           fixed_income_assets, constraint_range,
                                           annualization)
 
-            # === Shortfall Risk under Normality ===
-            mu_3y = np.array(r) * 3
-            sigma_3y = np.array(std) * np.sqrt(3)
-            z_score = (0 - mu_3y) / sigma_3y
-            shortfall_prob = norm.cdf(z_score)
-
-            if np.all(shortfall_prob <= shortfall_threshold):
-                weights.append(w)
-                stdev.append(std)
-                exp_ret.append(r)
-            else:
-                continue
+            weights.append(w)
+            stdev.append(std)
+            exp_ret.append(r)
 
         except SolverError:
-            pass
+            continue
 
     if len(weights) == 0:
-        raise ValueError("No portfolios passed the shortfall risk constraint.")
+        raise ValueError("No portfolios passed the constraints.")
 
     w = np.mean(weights, axis=0)
     s = np.mean(stdev, axis=0)
     r = np.mean(exp_ret, axis=0)
+
     concat = np.hstack([a.reshape(nPort, -1) for a in [r, s, w]])
     column_names = list(input_returns.columns)
     Resampled_EF = pd.DataFrame(concat, columns=["EXP_RET", "STDEV"] + column_names)
+
+    # 평균 기대수익률과 표준편차 계산
+    mean_er = pd.concat(er_list, axis=1).mean(axis=1)
+    std_er = pd.DataFrame(cov_diag_list, columns=input_returns.columns).mean(axis=0)
 
     return Resampled_EF
