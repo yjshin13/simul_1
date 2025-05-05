@@ -99,12 +99,15 @@ if file is not None:
             st.session_state.nSim = nSim
             st.session_state.constraint_range = constraint_range
             st.session_state.input_ret = st.session_state.input_price.pct_change().dropna()
+                                                              
+            # 기존 코드에서 simulation 호출 라인을 아래와 같이 수정
+            st.session_state.EF, st.session_state.mean_er, st.session_state.std_er = \
+                y_r_mvo_model_func.simulation(st.session_state.input_ret,
+                                              st.session_state.nSim, st.session_state.nPort,
+                                              st.session_state.input_universe,
+                                              st.session_state.constraint_range,
+                                              annualization)
 
-           st.session_state.EF, st.session_state.mean_er, st.session_state.std_er = y_r_mvo_model_func.simulation(st.session_state.input_ret,
-                                                           st.session_state.nSim, st.session_state.nPort,
-                                                           st.session_state.input_universe,
-                                                           st.session_state.constraint_range,
-                                                           annualization)
 
             st.session_state.key = key
             st.session_state.Target = Target
