@@ -99,15 +99,12 @@ if file is not None:
             st.session_state.nSim = nSim
             st.session_state.constraint_range = constraint_range
             st.session_state.input_ret = st.session_state.input_price.pct_change().dropna()
-                                                              
-            # 기존 코드에서 simulation 호출 라인을 아래와 같이 수정
-            st.session_state.EF, st.session_state.mean_er, st.session_state.std_er = \
-                y_r_mvo_model_func.simulation(st.session_state.input_ret,
-                                              st.session_state.nSim, st.session_state.nPort,
-                                              st.session_state.input_universe,
-                                              st.session_state.constraint_range,
-                                              annualization)
 
+            st.session_state.EF = y_r_mvo_model_func.simulation(st.session_state.input_ret,
+                                                           st.session_state.nSim, st.session_state.nPort,
+                                                           st.session_state.input_universe,
+                                                           st.session_state.constraint_range,
+                                                           annualization)
 
             st.session_state.key = key
             st.session_state.Target = Target
@@ -129,26 +126,17 @@ if file is not None:
                                                        & (input_price.index <= end_date)
                                                        & (input_price.index.is_month_end == True)]
 
-
-
         with st.expander("Optimization (Target: " + str(Target) + "%, " + st.session_state.freq_input + ")", expanded=True):
 
             Target_index = (st.session_state.EF['EXP_RET'] - Target / 100).abs().idxmin()
 
-            col_x, col_y, col_xx, col_yy = st.columns([1, 1, 1, 1])
+            col_x, col_y, col_z = st.columns([1, 1, 2])
 
             with col_x:
                 st.info("Expected Return: " + str(round(st.session_state.EF.loc[Target_index]["EXP_RET"] * 100, 2)) + "%")
 
             with col_y:
                 st.info("Expected Risk: " + str(round(st.session_state.EF.loc[Target_index]["STDEV"] * 100, 2)) + "%")
-
-            with col_xx:
-
-                st.info("Expected er: " + str(round(st.session_state.mean_er* 100*12, 2)) + "%")
-
-            with col_yy:
-                st.info("Expected std: " + str(round(st.session_state.std_er* 100*np.sqrt(12), 2)) + "%")
 
             st.write("")
 
