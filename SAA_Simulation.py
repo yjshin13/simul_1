@@ -111,7 +111,8 @@ if file is not None:
 
             A = st.session_state.input_universe.copy()
             A.index = st.session_state.input_universe['symbol']
-            Result = pd.concat([A.drop(['symbol'], axis=1).T, st.session_state.EF.applymap('{:.6%}'.format)], axis=0, join='outer')
+            # Result = pd.concat([A.drop(['symbol'], axis=1).T, st.session_state.EF.applymap('{:.6%}'.format)], axis=0, join='outer')
+            Result = pd.concat([A.drop(['symbol'], axis=1).T, st.session_state.EF.apply(lambda col: col.map('{:.6%}'.format))], axis=0, join='outer')
             new_col = Result.columns[-2:].to_list() + Result.columns[:-2].to_list()
             st.session_state.Result = Result[new_col]
             st.session_state.freq_input = freq
@@ -362,7 +363,8 @@ if file is not None:
 
                 with col24:
                     st.write('Floating Weight')
-                    st.dataframe(st.session_state.alloc.applymap('{:.2%}'.format))
+                    #st.dataframe(st.session_state.alloc.applymap('{:.2%}'.format))
+                    st.dataframe(st.session_state.alloc.apply(lambda col: col.map('{:.2%}'.format)))
 
                 st.write(" ")
 
