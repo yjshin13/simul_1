@@ -45,7 +45,8 @@ def simulation(assets_data, allocation, commission=0, rebal='Monthly', freq='Dai
     alloc_float = alloc_float[alloc_float.index>=portfolio.index[0]]
     alloc_amount = pd.DataFrame(index=assets_data.index, columns=assets_data.columns)
     alloc_amount = alloc_amount[alloc_amount.index>=portfolio.index[0]]
-    portfolio[0] = 100
+    # portfolio[0] = 100
+    portfolio.iloc[0] = 100
 
     k = 0
     j_rebal = 0
