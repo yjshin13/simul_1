@@ -5,9 +5,14 @@ def cleansing(assets_data=pd.DataFrame(), alloc=list(), rebal=2, freq='Daily'):
     
     alloc = pd.DataFrame(alloc).T
 
-    assets_data = pd.DataFrame(assets_data,
-                            index=pd.date_range(start=assets_data.index[0],
-                                                end=assets_data.index[-1],freq='D')).fillna(method='ffill')
+    # assets_data = pd.DataFrame(assets_data,
+    #                         index=pd.date_range(start=assets_data.index[0],
+    #                                             end=assets_data.index[-1],freq='D')).fillna(method='ffill')
+
+    assets_data = pd.DataFrame(
+    assets_data,
+    index=pd.date_range(start=assets_data.index[0],
+                        end=assets_data.index[-1], freq='D')).ffill()
 
 
     if freq==2:
