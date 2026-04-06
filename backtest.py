@@ -56,44 +56,78 @@ def simulation(assets_data, allocation, commission=0, rebal='Monthly', freq='Dai
     alloc_float.iloc[0,:] = last_alloc.copy()
     alloc_amount.iloc[0,:] = last_alloc.copy() * 100
 
-    for i in stqdm(range(0, len(portfolio)-1)):
 
+
+    for i in stqdm(range(0, len(portfolio) - 1)):
 
         if portfolio.index[i] in allocation.index:
-
-
-            # cost = (commission / 100) * x[i - 1] * transaction_weight[i - 1]
-
+    
             j = assets_data.index.get_loc(portfolio.index[i + 1])
             k = allocation.index.get_loc(portfolio.index[i])
             i_rebal = portfolio.index.get_loc(portfolio.index[i])
             j_rebal = assets_data.index.get_loc(portfolio.index[i])
-
-
+    
             transaction_weight = abs(allocation.iloc[k] - last_alloc).sum()
-            cost = (commission/100)* transaction_weight
-
-            portfolio[i + 1] = portfolio[i_rebal]*(1-cost)*\
-                               (assets_data.iloc[j]/assets_data.iloc[j_rebal] * allocation.iloc[k]).sum()
-
-
+            cost = (commission / 100) * transaction_weight
+    
+            portfolio.iloc[i + 1] = portfolio.iloc[i_rebal] * (1 - cost) * \
+                                    (assets_data.iloc[j] / assets_data.iloc[j_rebal] * allocation.iloc[k]).sum()
+    
             last_alloc = assets_data.iloc[j] / assets_data.iloc[j_rebal] * allocation.iloc[k]
-            alloc_float.iloc[i+1,:] = last_alloc/last_alloc.sum()
-            alloc_amount.iloc[i+1,:] = portfolio[i_rebal]*(1-cost)*\
-                               (assets_data.iloc[j]/assets_data.iloc[j_rebal] * allocation.iloc[k])
-
+            alloc_float.iloc[i + 1, :] = last_alloc / last_alloc.sum()
+            alloc_amount.iloc[i + 1, :] = portfolio.iloc[i_rebal] * (1 - cost) * \
+                                          (assets_data.iloc[j] / assets_data.iloc[j_rebal] * allocation.iloc[k])
+    
         else:
-
+    
             j = assets_data.index.get_loc(portfolio.index[i + 1])
-
-            portfolio[i + 1] = portfolio[i_rebal]*(1-cost)*\
-                               (assets_data.iloc[j]/assets_data.iloc[j_rebal] * allocation.iloc[k]).sum()
-
-
+    
+            portfolio.iloc[i + 1] = portfolio.iloc[i_rebal] * (1 - cost) * \
+                                    (assets_data.iloc[j] / assets_data.iloc[j_rebal] * allocation.iloc[k]).sum()
+    
             last_alloc = assets_data.iloc[j] / assets_data.iloc[j_rebal] * allocation.iloc[k]
-            alloc_float.iloc[i+1,:] = last_alloc/last_alloc.sum()
-            alloc_amount.iloc[i+1,:] = portfolio[i_rebal]*(1-cost)*\
-                               (assets_data.iloc[j]/assets_data.iloc[j_rebal] * allocation.iloc[k])
+            alloc_float.iloc[i + 1, :] = last_alloc / last_alloc.sum()
+            alloc_amount.iloc[i + 1, :] = portfolio.iloc[i_rebal] * (1 - cost) * \
+                                          (assets_data.iloc[j] / assets_data.iloc[j_rebal] * allocation.iloc[k])
+
+    # for i in stqdm(range(0, len(portfolio)-1)):
+
+
+    #     if portfolio.index[i] in allocation.index:
+
+
+    #         # cost = (commission / 100) * x[i - 1] * transaction_weight[i - 1]
+
+    #         j = assets_data.index.get_loc(portfolio.index[i + 1])
+    #         k = allocation.index.get_loc(portfolio.index[i])
+    #         i_rebal = portfolio.index.get_loc(portfolio.index[i])
+    #         j_rebal = assets_data.index.get_loc(portfolio.index[i])
+
+
+    #         transaction_weight = abs(allocation.iloc[k] - last_alloc).sum()
+    #         cost = (commission/100)* transaction_weight
+
+    #         portfolio[i + 1] = portfolio[i_rebal]*(1-cost)*\
+    #                            (assets_data.iloc[j]/assets_data.iloc[j_rebal] * allocation.iloc[k]).sum()
+
+
+    #         last_alloc = assets_data.iloc[j] / assets_data.iloc[j_rebal] * allocation.iloc[k]
+    #         alloc_float.iloc[i+1,:] = last_alloc/last_alloc.sum()
+    #         alloc_amount.iloc[i+1,:] = portfolio[i_rebal]*(1-cost)*\
+    #                            (assets_data.iloc[j]/assets_data.iloc[j_rebal] * allocation.iloc[k])
+
+    #     else:
+
+    #         j = assets_data.index.get_loc(portfolio.index[i + 1])
+
+    #         portfolio[i + 1] = portfolio[i_rebal]*(1-cost)*\
+    #                            (assets_data.iloc[j]/assets_data.iloc[j_rebal] * allocation.iloc[k]).sum()
+
+
+    #         last_alloc = assets_data.iloc[j] / assets_data.iloc[j_rebal] * allocation.iloc[k]
+    #         alloc_float.iloc[i+1,:] = last_alloc/last_alloc.sum()
+    #         alloc_amount.iloc[i+1,:] = portfolio[i_rebal]*(1-cost)*\
+    #                            (assets_data.iloc[j]/assets_data.iloc[j_rebal] * allocation.iloc[k])
 
     # portfolio.index = portfolio.index.date
 
